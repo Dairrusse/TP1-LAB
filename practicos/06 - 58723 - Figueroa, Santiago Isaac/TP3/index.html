@@ -57,7 +57,7 @@
             padding: 10px;
             margin-bottom: 10px;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-            cursor: pointer;
+            cursor: pointer; /* Añadido para indicar que el panel es clickeable */
         }
 
         .cantidad {
@@ -151,7 +151,8 @@
         function Editar({ producto, alGuardar, alCancelar }) {
             const [nombre, setNombre] = useState(producto.producto);
             const [EAN, setEAN] = useState(producto.EAN);
-            const [cantidad, setCantidad] = useState(producto.cantidad === 0 ? '' : producto.cantidad);
+            const [cantidad, setCantidad] = useState(producto.cantidad !== 0 ? producto.cantidad : '');
+
             const [error, setError] = useState(false);
 
             const cambiarNombre = e => {
@@ -173,7 +174,7 @@
                     setError(true);
                     return;
                 }
-                alGuardar({ ...producto, producto: nombre, EAN, cantidad: Number(cantidad) });
+                alGuardar({ ...producto, producto: nombre, EAN, cantidad: parseInt(cantidad, 10) });
             };
             const cancelar = e => {
                 e.preventDefault();
@@ -197,7 +198,7 @@
             );
         }
 
-        function Producto({ producto, alEditar, alBorrar, alGuardar, alCancelar }) {
+        function Producto({ producto, alEditar, alBorrar, alGuardar, alCancelar, incrementarCantidad }) {
             const [editando, setEditando] = useState(producto.editando);
 
             const handleEditar = () => setEditando(true);
@@ -210,20 +211,16 @@
                 alCancelar();
             };
 
-            const incrementarCantidad = () => {
-                alGuardar({ ...producto, cantidad: producto.cantidad + 1 });
-            };
-
             return editando ? (
                 <Editar producto={producto} alGuardar={handleGuardar} alCancelar={handleCancelar} />
             ) : (
-                <div className="panel" onClick={incrementarCantidad}>
+                <div className="panel" onClick={() => incrementarCantidad(producto.id)}>
                     <div className="cantidad">{producto.cantidad}</div>
                     <div className="info">
                         <p><strong>{producto.producto}</strong></p>
                         <p>{producto.EAN}</p>
                     </div>
-                    <div className="acciones">
+                    <div className="acciones" onClick={(e) => e.stopPropagation()}>
                         <button className="icono" onClick={handleEditar}>
                             <img src="https://img.icons8.com/material-rounded/24/000000/edit.png" alt="Editar" />
                         </button>
@@ -235,16 +232,15 @@
             );
         }
 
-        function Agenda({ productos, alAgregar, alGuardar, alBorrar, alCancelar }) {
+        function Agenda({ productos, alAgregar, alGuardar, alBorrar, alCancelar, incrementarCantidad }) {
             const productosOrdenados = [...productos].sort((a, b) => a.producto.localeCompare(b.producto));
-
             return (
                 <>
                     <div className="nav">
                         <h1>Control Deposito</h1>
                         <button className="bttmas" onClick={alAgregar}>+</button>
                     </div>
-                    {productos.length === 0 && <h2>No hay productos</h2>}
+                    {productosOrdenados.length === 0 && <h2>No hay productos</h2>}
                     {productosOrdenados.map(producto => (
                         <Producto
                             key={producto.id}
@@ -253,6 +249,7 @@
                             alBorrar={alBorrar}
                             alGuardar={alGuardar}
                             alCancelar={alCancelar}
+                            incrementarCantidad={incrementarCantidad}
                         />
                     ))}
                 </>
@@ -287,7 +284,7 @@
                     id: Date.now(),
                     producto: '',
                     EAN: '',
-                    cantidad: 0,
+                    cantidad: '',
                     editando: true
                 };
                 setProductos([...productos, nuevoProducto]);
@@ -297,6 +294,10 @@
                 setProductos(productos.filter(p => p.id !== id));
             };
 
+            const incrementarCantidad = (id) => {
+                setProductos(productos.map(p => p.id === id ? { ...p, cantidad: p.cantidad + 1 } : p));
+            };
+
             return (
                 <Agenda
                     productos={productos}
@@ -304,6 +305,7 @@
                     alGuardar={guardarProducto}
                     alBorrar={borrarProducto}
                     alCancelar={cancelarEdicion}
+                    incrementarCantidad={incrementarCantidad}
                 />
             );
         }
@@ -314,3 +316,4 @@
 </body>
 
 </html>
+
